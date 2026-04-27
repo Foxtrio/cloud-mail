@@ -51,6 +51,11 @@ const en = {
 	noOsUpBack: 'Cannot upload background: object storage not configured',
 	noOsDomainUpBack: 'Cannot upload background: object storage domain not configured',
 	starNotExistEmail: 'Starred email does not exist',
+	tagNotExist: 'Tag does not exist',
+	tagNameEmpty: 'Tag name cannot be empty',
+	tagNameExists: 'Tag name already exists',
+	tagLimitReached: 'Maximum number of tags reached',
+	tagEmailNotExist: 'Email does not exist',
 	emptyBotToken: 'Please verify that you are human',
 	botVerifyFail: 'Bot verification failed, please try again',
 	authExpired: 'Authentication has expired. Please sign in again',
@@ -98,7 +103,12 @@ const en = {
 		"系统设置": "System Settings",
 		"设置查看": "View Settings",
 		"设置修改": "Change Settings",
-		"发件重置": "Reset Send Count"
+		"发件重置": "Reset Send Count",
+		"标签管理": "Tags",
+		"标签查看": "View Tags",
+		"标签添加": "Add Tag",
+		"标签修改": "Edit Tag",
+		"标签删除": "Delete Tag"
 	}
 };
 

@@ -51,6 +51,11 @@ const zh = {
 	noOsUpBack: '对象存储未配置不能上传背景',
 	noOsDomainUpBack: '对象存储域名未配置不能上传背景',
 	starNotExistEmail: '星标的邮件不存在',
+	tagNotExist: '标签不存在',
+	tagNameEmpty: '标签名不能为空',
+	tagNameExists: '标签名已存在',
+	tagLimitReached: '标签数量已达上限',
+	tagEmailNotExist: '邮件不存在',
 	emptyBotToken: '需要进行人机验证',
 	botVerifyFail: '人机验证失败,请重试',
 	authExpired: '身份认证失效,请重新登录',
@@ -98,7 +103,12 @@ const zh = {
 		"系统设置": "系统设置",
 		"设置查看": "设置查看",
 		"设置修改": "设置修改",
-		'发件重置': '发件重置'
+		'发件重置': '发件重置',
+		'标签管理': '标签管理',
+		'标签查看': '标签查看',
+		'标签添加': '标签添加',
+		'标签修改': '标签修改',
+		'标签删除': '标签删除'
 	}
 }
 

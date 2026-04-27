@@ -21,6 +21,7 @@ import domainUtils from '../utils/domain-uitls';
 import account from "../entity/account";
 import { att } from '../entity/att';
 import telegramService from './telegram-service';
+import tagService from './tag-service';
 
 const emailService = {
 
@@ -563,11 +564,13 @@ const emailService = {
 		emailIds = emailIds.split(',').map(Number);
 		await attService.removeByEmailIds(c, emailIds);
 		await starService.removeByEmailIds(c, emailIds);
+		await tagService.removeByEmailIds(c, emailIds);
 		await orm(c).delete(email).where(inArray(email.emailId, emailIds)).run();
 	},
 
 	async physicsDeleteUserIds(c, userIds) {
 		await attService.removeByUserIds(c, userIds);
+		await tagService.removeByUserIds(c, userIds);
 		await orm(c).delete(email).where(inArray(email.userId, userIds)).run();
 	},
 
@@ -740,6 +743,9 @@ const emailService = {
 				const atts = attList.filter(attRow => attRow.emailId === emailRow.emailId);
 				emailRow.attList = atts;
 			});
+
+			// Enrich with tags
+			await tagService.enrichEmailsWithTags(c, list);
 		}
 	},
 
@@ -801,12 +807,14 @@ const emailService = {
 		}
 
 		await attService.removeByEmailIds(c, emailIds);
+		await tagService.removeByEmailIds(c, emailIds);
 
 		await orm(c).delete(email).where(conditions.length > 1 ? and(...conditions) : conditions[0]).run();
 	},
 
 	async physicsDeleteByAccountId(c, accountId) {
 		await attService.removeByAccountId(c, accountId);
+		await tagService.removeByAccountId(c, accountId);
 		await orm(c).delete(email).where(eq(email.accountId, accountId)).run();
 	},
 

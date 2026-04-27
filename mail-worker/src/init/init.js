@@ -28,8 +28,62 @@ const dbInit = {
 		await this.v2_7DB(c);
 		await this.v2_8DB(c);
 		await this.v2_9DB(c);
+		await this.v3DB(c);
 		await settingService.refresh(c);
 		return c.text('success');
+	},
+
+	async v3DB(c) {
+		try {
+			await c.env.db.prepare(`
+				CREATE TABLE IF NOT EXISTS tag (
+					tag_id INTEGER PRIMARY KEY AUTOINCREMENT,
+					user_id INTEGER NOT NULL,
+					name TEXT NOT NULL,
+					color TEXT NOT NULL DEFAULT '#409EFF',
+					sort INTEGER NOT NULL DEFAULT 0,
+					create_time DATETIME DEFAULT CURRENT_TIMESTAMP
+				)
+			`).run();
+		} catch (e) {
+			console.warn(`跳过字段：${e.message}`);
+		}
+
+		try {
+			await c.env.db.prepare(`
+				CREATE TABLE IF NOT EXISTS email_tag (
+					email_tag_id INTEGER PRIMARY KEY AUTOINCREMENT,
+					user_id INTEGER NOT NULL,
+					email_id INTEGER NOT NULL,
+					tag_id INTEGER NOT NULL,
+					create_time DATETIME DEFAULT CURRENT_TIMESTAMP
+				)
+			`).run();
+		} catch (e) {
+			console.warn(`跳过字段：${e.message}`);
+		}
+
+		try {
+			await c.env.db.batch([
+				c.env.db.prepare(`CREATE INDEX IF NOT EXISTS idx_email_tag_email_id ON email_tag(email_id)`),
+				c.env.db.prepare(`CREATE INDEX IF NOT EXISTS idx_email_tag_tag_id ON email_tag(tag_id)`),
+				c.env.db.prepare(`CREATE INDEX IF NOT EXISTS idx_tag_user_id ON tag(user_id)`)
+			]);
+		} catch (e) {
+			console.warn(`跳过索引：${e.message}`);
+		}
+
+		try {
+			await c.env.db.prepare(`
+        INSERT INTO perm (perm_id, name, perm_key, pid, type, sort) VALUES
+        (37,'标签管理', NULL, 0, 1, 4.9),
+        (38,'标签查看', 'tag:query', 37, 2, 0),
+        (39,'标签添加', 'tag:add', 37, 2, 1),
+        (40,'标签修改', 'tag:set', 37, 2, 2),
+        (41,'标签删除', 'tag:delete', 37, 2, 3)`).run();
+		} catch (e) {
+			console.warn(`跳过数据：${e.message}`);
+		}
 	},
 
 	async v2_9DB(c) {
