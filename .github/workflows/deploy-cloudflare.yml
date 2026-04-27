@@ -95,6 +95,9 @@ jobs:
           
           CONFIG_FILE="wrangler-action.toml"
           
+          # Normalize line endings to avoid sed ^$ matching issues with CRLF
+          sed -i 's/\r$//' "$CONFIG_FILE"
+          
           if [ -z "$R2_BUCKET_NAME" ]; then
             sed -i '/\[\[r2_buckets\]\]/,/^$/d' "$CONFIG_FILE"
           fi
