@@ -324,6 +324,18 @@ const zh = {
     searchUser: '搜索用户',
     searchEmail: '搜索邮箱',
     searchSender: '搜索发件人',
-    userEmail: '用户邮箱'
+    userEmail: '用户邮箱',
+    tags: '标签',
+    addTag: '新建标签',
+    editTag: '编辑标签',
+    deleteTag: '删除标签',
+    tagName: '标签名称',
+    tagColor: '颜色',
+    manageTags: '管理标签',
+    noTags: '暂无标签',
+    tagLimit: '最多20个标签',
+    tagDelConfirm: '确认删除该标签？该标签将从所有邮件中移除。',
+    tagSaveSuccess: '标签已保存',
+    tagDeleteSuccess: '标签已删除',
 }
 export default zh

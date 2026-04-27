@@ -324,7 +324,19 @@ const en = {
     searchUser: 'Search by user',
     searchEmail: 'Search by Email',
     searchSender: 'Search by Sender',
-    userEmail: 'Email Address'
+    userEmail: 'Email Address',
+    tags: 'Tags',
+    addTag: 'New Tag',
+    editTag: 'Edit Tag',
+    deleteTag: 'Delete Tag',
+    tagName: 'Tag Name',
+    tagColor: 'Color',
+    manageTags: 'Manage Tags',
+    noTags: 'No tags yet',
+    tagLimit: 'Maximum 20 tags',
+    tagDelConfirm: 'Confirm deleting this tag? It will be removed from all emails.',
+    tagSaveSuccess: 'Tag saved',
+    tagDeleteSuccess: 'Tag deleted',
 }
 
 export default en

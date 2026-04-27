@@ -7,6 +7,40 @@
         <Icon class="icon" @click="changeStar" v-if="email.isStar" icon="fluent-color:star-16" width="20" height="20"/>
         <Icon class="icon" @click="changeStar" v-else icon="solar:star-line-duotone" width="18" height="18"/>
       </span>
+
+      <el-popover
+          v-if="emailStore.contentData.showStar && tagStore.tags.length > 0"
+          placement="bottom"
+          trigger="click"
+          width="200"
+      >
+        <template #reference>
+          <Icon class="icon" icon="mdi:tag-outline" width="18" height="18" />
+        </template>
+        <div class="tag-dropdown">
+          <div class="tag-dropdown-title">{{ $t('tags') }}</div>
+          <el-scrollbar max-height="250px">
+            <div
+                v-for="tag in tagStore.tags"
+                :key="tag.tagId"
+                class="tag-dropdown-item"
+                @click="toggleTag(tag)"
+            >
+              <Icon
+                  v-if="hasTag(tag.tagId)"
+                  icon="ep:check"
+                  width="16"
+                  height="16"
+                  :color="tag.color"
+              />
+              <div v-else style="width: 16px; height: 16px;"></div>
+              <div class="tag-dropdown-color" :style="{ background: tag.color }"></div>
+              <span>{{ tag.name }}</span>
+            </div>
+          </el-scrollbar>
+        </div>
+      </el-popover>
+
       <Icon class="icon" v-if="emailStore.contentData.showReply" v-perm="'email:send'"  @click="openReply" icon="la:reply" width="21" height="21" />
       <Icon class="icon" v-if="emailStore.contentData.showReply" v-perm="'email:send'"  @click="openForward" icon="iconoir:arrow-up-right" width="20" height="20" />
     </div>
@@ -92,11 +126,14 @@ import {allEmailDelete} from "@/request/all-email.js";
 import {useUiStore} from "@/store/ui.js";
 import {useI18n} from "vue-i18n";
 import {EmailUnreadEnum} from "@/enums/email-enum.js";
+import {useTagStore} from "@/store/tag.js";
+import {tagAddToEmail, tagRemoveFromEmail} from "@/request/tag.js";
 
 const uiStore = useUiStore();
 const settingStore = useSettingStore();
 const accountStore = useAccountStore();
 const emailStore = useEmailStore();
+const tagStore = useTagStore();
 const router = useRouter()
 const email = emailStore.contentData.email
 const showPreview = ref(false)
@@ -179,6 +216,31 @@ function changeStar() {
   }
 }
 
+function hasTag(tagId) {
+  return email.tagList && email.tagList.some(t => t.tagId === tagId)
+}
+
+async function toggleTag(tag) {
+  if (!email.tagList) {
+    email.tagList = []
+  }
+
+  const index = email.tagList.findIndex(t => t.tagId === tag.tagId)
+  try {
+    if (index > -1) {
+      // Remove tag
+      await tagRemoveFromEmail(tag.tagId, email.emailId)
+      email.tagList.splice(index, 1)
+    } else {
+      // Add tag
+      await tagAddToEmail(tag.tagId, email.emailId)
+      email.tagList.push({ tagId: tag.tagId, name: tag.name, color: tag.color })
+    }
+  } catch (e) {
+    console.error('Failed to toggle tag', e)
+  }
+}
+
 const handleBack = () => {
   router.back()
 }
@@ -242,6 +304,33 @@ const handleDelete = () => {
 .scrollbar {
   height: calc(100% - 38px);
   width: 100%;
+}
+
+.tag-dropdown {
+  padding: 4px 0;
+}
+.tag-dropdown-title {
+  padding: 0 12px 8px 12px;
+  font-size: 13px;
+  color: var(--el-text-color-secondary);
+  font-weight: bold;
+}
+.tag-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background 0.2s;
+  font-size: 14px;
+}
+.tag-dropdown-item:hover {
+  background: var(--el-fill-color-light);
+}
+.tag-dropdown-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
 }
 
 .container {

@@ -26,6 +26,11 @@
           <Icon icon="solar:star-line-duotone" width="20" height="20" />
           <span class="menu-name" style="margin-left: 21px">{{$t('starred')}}</span>
         </el-menu-item>
+        <el-menu-item @click="router.push({name: 'tag'})" index="tag"
+                      :class="route.meta.name === 'tag' ? 'choose-item' : ''">
+          <Icon icon="mdi:tag-outline" width="20" height="20" />
+          <span class="menu-name" style="margin-left: 21px">{{$t('tags')}}</span>
+        </el-menu-item>
         <el-menu-item @click="router.push({name: 'setting'})" index="setting"
                       :class="route.meta.name === 'setting' ? 'choose-item' : ''">
           <Icon icon="fluent:settings-48-regular" width="20" height="20" />
@@ -49,7 +54,12 @@
           <Icon icon="fluent:mail-list-28-regular" width="22" height="22" />
           <span class="menu-name" style="margin-left: 20px">{{$t('allMail')}}</span>
         </el-menu-item>
-        <el-menu-item @click="router.push({name: 'role'})" index="setting" v-perm="'role:query'"
+        <el-menu-item @click="router.push({name: 'tag-manage'})" index="tag-manage" v-perm="'tag:query'"
+                      :class="route.meta.name === 'tag-manage' ? 'choose-item' : ''">
+          <Icon icon="fluent:tag-20-regular" width="22" height="22" />
+          <span class="menu-name" style="margin-left: 20px">{{$t('manageTags')}}</span>
+        </el-menu-item>
+        <el-menu-item @click="router.push({name: 'role'})" index="role" v-perm="'role:query'"
                       :class="route.meta.name === 'role' ? 'choose-item' : ''">
           <Icon icon="fluent:lock-closed-16-regular" width="22" height="22" />
           <span class="menu-name" style="margin-left: 20px">{{$t('permissions')}}</span>

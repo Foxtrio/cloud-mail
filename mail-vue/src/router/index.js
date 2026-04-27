@@ -51,6 +51,16 @@ const routes = [
                     menu: true
                 }
             },
+            {
+                path: '/tags',
+                name: 'tag',
+                component: () => import('@/views/tag/index.vue'),
+                meta: {
+                    title: 'tags',
+                    name: 'tag',
+                    menu: true
+                }
+            },
         ]
 
     },

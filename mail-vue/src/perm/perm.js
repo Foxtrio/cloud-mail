@@ -118,5 +118,15 @@ const routers = {
             name: 'analysis',
             menu: true
         }
+    }],
+    'tag:query': [{
+        path: '/tag-manage',
+        name: 'tag-manage',
+        component: () => import('@/views/tag-manage/index.vue'),
+        meta: {
+            title: 'manageTags',
+            name: 'tag-manage',
+            menu: true
+        }
     }]
 }

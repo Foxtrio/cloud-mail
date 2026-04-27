@@ -162,6 +162,7 @@ import {loginUserInfo} from "@/request/my.js";
 import {permsToRouter} from "@/perm/perm.js";
 import {useI18n} from "vue-i18n";
 import {oauthBindUser, oauthLinuxDoLogin} from "@/request/ouath.js";
+import {useTagStore} from "@/store/tag.js";
 
 const {t} = useI18n();
 const accountStore = useAccountStore();
@@ -401,6 +402,8 @@ async function saveToken(token) {
   });
   await router.replace({name: 'layout'})
   uiStore.showNotice()
+  const tagStore = useTagStore();
+  tagStore.fetchTags();
   oauthLoading.value = false;
   bindLoading.value = false;
 }

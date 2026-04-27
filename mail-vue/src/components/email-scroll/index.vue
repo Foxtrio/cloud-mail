@@ -88,6 +88,11 @@
                     </span>
                     <span class="email-content">{{ item.formatText || '\u200B' }}</span>
                   </div>
+                  <div class="tag-badges" v-if="item.tagList && item.tagList.length > 0">
+                    <span v-for="t in item.tagList" :key="t.tagId" class="tag-badge" :style="{ background: t.color }">
+                      {{ t.name }}
+                    </span>
+                  </div>
                   <div class="user-info" v-if="showUserInfo">
                     <div class="user">
                       <span>
@@ -1310,6 +1315,21 @@ ul {
   list-style: none;
   padding: 0;
   margin: 0;
+}
+
+.tag-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.tag-badge {
+  color: #fff;
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
 }
 
 </style>
