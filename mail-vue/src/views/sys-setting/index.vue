@@ -352,6 +352,48 @@
             </div>
           </div>
 
+          <!-- Security Settings Card -->
+          <div class="settings-card">
+            <div class="card-title">{{ $t('security') }}</div>
+            <div class="card-content">
+              <div class="setting-item">
+                <div>
+                  <span>{{ $t('securitySection') }}</span>
+                  <el-tooltip effect="dark" :content="$t('securitySectionDesc')">
+                    <Icon class="warning" icon="fe:warning" width="18" height="18"/>
+                  </el-tooltip>
+                </div>
+                <div>
+                  <el-switch @change="change" :before-change="beforeChange" :active-value="0" :inactive-value="1"
+                             v-model="setting.securitySection"/>
+                </div>
+              </div>
+              <div class="setting-item">
+                <div>
+                  <span>{{ $t('renderMode') }}</span>
+                  <el-tooltip effect="dark" :content="$t('renderModeDesc')">
+                    <Icon class="warning" icon="fe:warning" width="18" height="18"/>
+                  </el-tooltip>
+                </div>
+                <div>
+                  <el-select
+                      @change="change"
+                      :style="`width: ${ locale === 'en' ? 140 : 120 }px;`"
+                      v-model="setting.defaultRenderMode"
+                      placeholder="Select"
+                  >
+                    <el-option
+                        v-for="item in renderModeOptions"
+                        :key="item.value"
+                        :label="item.label"
+                        :value="item.value"
+                    />
+                  </el-select>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div class="settings-card about">
             <div class="card-title">{{ $t('about') }}</div>
             <div class="card-content">
@@ -834,6 +876,12 @@ const authRefreshOptions = computed(() => [
   {label: '10s', value: 10},
   {label: '15s', value: 15},
   {label: '20s', value: 20},
+])
+
+const renderModeOptions = computed(() => [
+  {label: t('renderAllowAll'), value: 'allow_all'},
+  {label: t('renderAllowBasic'), value: 'allow_basic'},
+  {label: t('renderDisallow'), value: 'disallow'},
 ])
 
 const tgChatId = ref([])

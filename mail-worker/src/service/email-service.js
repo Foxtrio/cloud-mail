@@ -821,6 +821,17 @@ const emailService = {
 	async read(c, params, userId) {
 		const { emailIds } = params;
 		await orm(c).update(email).set({ unread: emailConst.unread.READ }).where(and(eq(email.userId, userId), inArray(email.emailId, emailIds)));
+	},
+
+	async setRenderMode(c, params, userId) {
+		const { emailId, renderMode } = params;
+		const validModes = ['allow_all', 'allow_basic', 'disallow'];
+		if (!validModes.includes(renderMode)) {
+			throw new BizError('Invalid render mode');
+		}
+		await orm(c).update(email).set({ renderMode }).where(
+			and(eq(email.emailId, emailId), eq(email.userId, userId))
+		).run();
 	}
 };
 

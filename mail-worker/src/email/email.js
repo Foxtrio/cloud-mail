@@ -44,6 +44,9 @@ export async function email(message, env, ctx) {
 
 		const email = await PostalMime.parse(content);
 
+		// Extract email authentication results from raw headers
+		const authResults = extractAuthResults(content);
+
 		const account = await accountService.selectByEmailIncludeDel({ env: env }, message.to);
 
 		if (!account && noRecipient === settingConst.noRecipient.CLOSE) {
@@ -97,7 +100,8 @@ export async function email(message, env, ctx) {
 			userId: account ? account.userId : 0,
 			accountId: account ? account.accountId : 0,
 			isDel: isDel.DELETE,
-			status: emailConst.status.SAVING
+			status: emailConst.status.SAVING,
+			authResults: JSON.stringify(authResults)
 		};
 
 		const attachments = [];
@@ -168,4 +172,68 @@ export async function email(message, env, ctx) {
 		console.error('邮件接收异常: ', e);
 		throw e
 	}
+}
+
+/**
+ * Extract SPF, DKIM, and DMARC authentication results from raw email headers.
+ * Parses Authentication-Results and Received-SPF headers.
+ */
+function extractAuthResults(rawContent) {
+	const results = {
+		spf: { status: 'none', detail: '' },
+		dkim: { status: 'none', detail: '' },
+		dmarc: { status: 'none', detail: '' }
+	};
+
+	try {
+		// Get headers section (everything before the first double newline)
+		const headerEnd = rawContent.indexOf('\r\n\r\n');
+		const headers = headerEnd > -1 ? rawContent.substring(0, headerEnd) : rawContent.substring(0, 4096);
+
+		// Unfold headers (continuation lines start with whitespace)
+		const unfoldedHeaders = headers.replace(/\r\n([ \t]+)/g, ' ');
+
+		// Parse Authentication-Results header
+		const authResultMatch = unfoldedHeaders.match(/^Authentication-Results:\s*(.+)/im);
+		if (authResultMatch) {
+			const authLine = authResultMatch[1];
+
+			// Extract SPF result
+			const spfMatch = authLine.match(/spf\s*=\s*(pass|fail|softfail|neutral|none|temperror|permerror)/i);
+			if (spfMatch) {
+				results.spf.status = spfMatch[1].toLowerCase();
+				const spfDetail = authLine.match(/spf\s*=\s*\S+\s+([^;]+)/i);
+				if (spfDetail) results.spf.detail = spfDetail[1].trim();
+			}
+
+			// Extract DKIM result
+			const dkimMatch = authLine.match(/dkim\s*=\s*(pass|fail|neutral|none|temperror|permerror|policy)/i);
+			if (dkimMatch) {
+				results.dkim.status = dkimMatch[1].toLowerCase();
+				const dkimDetail = authLine.match(/dkim\s*=\s*\S+\s+([^;]+)/i);
+				if (dkimDetail) results.dkim.detail = dkimDetail[1].trim();
+			}
+
+			// Extract DMARC result
+			const dmarcMatch = authLine.match(/dmarc\s*=\s*(pass|fail|none|bestguesspass|temperror|permerror)/i);
+			if (dmarcMatch) {
+				results.dmarc.status = dmarcMatch[1].toLowerCase();
+				const dmarcDetail = authLine.match(/dmarc\s*=\s*\S+\s+([^;]+)/i);
+				if (dmarcDetail) results.dmarc.detail = dmarcDetail[1].trim();
+			}
+		}
+
+		// Fallback: Parse Received-SPF header if SPF not found in Authentication-Results
+		if (results.spf.status === 'none') {
+			const receivedSpfMatch = unfoldedHeaders.match(/^Received-SPF:\s*(pass|fail|softfail|neutral|none|temperror|permerror)\b\s*(.*)/im);
+			if (receivedSpfMatch) {
+				results.spf.status = receivedSpfMatch[1].toLowerCase();
+				results.spf.detail = receivedSpfMatch[2] ? receivedSpfMatch[2].trim().substring(0, 200) : '';
+			}
+		}
+	} catch (e) {
+		console.warn('Failed to extract auth results:', e);
+	}
+
+	return results;
 }

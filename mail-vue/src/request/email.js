@@ -24,3 +24,7 @@ export function emailSend(form,progress) {
         noMsg: true
     })
 }
+
+export function emailSetRenderMode(emailId, renderMode) {
+    return http.put('/email/renderMode', {emailId, renderMode})
+}

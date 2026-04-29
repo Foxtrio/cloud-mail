@@ -218,7 +218,9 @@ const settingService = {
 			linuxdoCallbackUrl: settingRow.linuxdoCallbackUrl,
 			linuxdoSwitch: settingRow.linuxdoSwitch,
 			minEmailPrefix: settingRow.minEmailPrefix,
-			projectLink: settingRow.projectLink
+			projectLink: settingRow.projectLink,
+			securitySection: settingRow.securitySection,
+			defaultRenderMode: settingRow.defaultRenderMode
 		};
 	}
 };

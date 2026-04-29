@@ -63,13 +63,87 @@
               <div class="date">
                 <div>{{ formatDetailDate(email.createTime) }}</div>
               </div>
+
+              <!-- Security Section (collapsible) -->
+              <div class="security-section" v-if="showSecuritySection && authResults">
+                <div class="security-header" @click="securityExpanded = !securityExpanded">
+                  <div class="security-header-left">
+                    <Icon icon="mdi:shield-check-outline" width="16" height="16" />
+                    <span>{{ $t('security') }}</span>
+                  </div>
+                  <Icon
+                    :icon="securityExpanded ? 'ep:arrow-up' : 'ep:arrow-down'"
+                    width="14" height="14"
+                    class="security-chevron"
+                  />
+                </div>
+                <transition name="security-slide">
+                  <div class="security-body" v-show="securityExpanded">
+                    <div class="auth-row">
+                      <span class="auth-label">{{ $t('spf') }}</span>
+                      <el-tag :type="authTagType(authResults.spf?.status)" size="small" effect="plain" round>
+                        {{ authStatusLabel(authResults.spf?.status) }}
+                      </el-tag>
+                      <span class="auth-detail" v-if="authResults.spf?.detail">{{ authResults.spf.detail }}</span>
+                    </div>
+                    <div class="auth-row">
+                      <span class="auth-label">{{ $t('dkim') }}</span>
+                      <el-tag :type="authTagType(authResults.dkim?.status)" size="small" effect="plain" round>
+                        {{ authStatusLabel(authResults.dkim?.status) }}
+                      </el-tag>
+                      <span class="auth-detail" v-if="authResults.dkim?.detail">{{ authResults.dkim.detail }}</span>
+                    </div>
+                    <div class="auth-row">
+                      <span class="auth-label">{{ $t('dmarc') }}</span>
+                      <el-tag :type="authTagType(authResults.dmarc?.status)" size="small" effect="plain" round>
+                        {{ authStatusLabel(authResults.dmarc?.status) }}
+                      </el-tag>
+                      <span class="auth-detail" v-if="authResults.dmarc?.detail">{{ authResults.dmarc.detail }}</span>
+                    </div>
+                  </div>
+                </transition>
+              </div>
+
             </div>
             <el-alert v-if="email.status === 3" :closable="false" :title="toMessage(email.message)" class="email-msg" type="error" show-icon />
             <el-alert v-if="email.status === 4" :closable="false" :title="$t('complained')" class="email-msg" type="warning" show-icon />
             <el-alert v-if="email.status === 5" :closable="false" :title="$t('delayed')" class="email-msg" type="warning" show-icon />
+
+            <!-- Content blocked warning -->
+            <el-alert
+              v-if="blockedCount > 0"
+              :closable="false"
+              :title="$t('contentBlocked')"
+              :description="$t('contentBlockedDetail', { count: blockedCount })"
+              class="email-msg blocked-warning"
+              type="warning"
+              show-icon
+            />
           </div>
+
+          <!-- Render mode selector -->
+          <div class="render-mode-bar">
+            <div class="render-mode-label">
+              <Icon icon="mdi:shield-lock-outline" width="15" height="15" />
+              <span>{{ $t('renderMode') }}</span>
+            </div>
+            <el-segmented
+              v-model="currentRenderMode"
+              :options="renderModeOptions"
+              size="small"
+              @change="onRenderModeChange"
+            />
+          </div>
+
           <el-scrollbar class="htm-scrollbar" :class="email.attList.length === 0 ? 'bottom-distance' : ''">
-            <ShadowHtml class="shadow-html" :html="formatImage(email.content)" v-if="email.content" />
+            <ShadowHtml
+              class="shadow-html"
+              :html="formatImage(email.content)"
+              :render-mode="currentRenderMode"
+              v-if="email.content && currentRenderMode !== 'disallow'"
+              @content-blocked="onContentBlocked"
+            />
+            <pre v-else-if="currentRenderMode === 'disallow' && email.content" class="email-text">{{ stripHtml(email.content) }}</pre>
             <pre v-else class="email-text" >{{email.text}}</pre>
           </el-scrollbar>
           <div class="att" v-if="email.attList.length > 0">
@@ -109,10 +183,10 @@
 </template>
 <script setup>
 import ShadowHtml from '@/components/shadow-html/index.vue'
-import {reactive, ref, watch, onMounted, onUnmounted} from "vue";
+import {reactive, ref, watch, onMounted, onUnmounted, computed} from "vue";
 import {useRouter} from 'vue-router'
 import {ElMessage, ElMessageBox} from 'element-plus'
-import {emailDelete, emailRead} from "@/request/email.js";
+import {emailDelete, emailRead, emailSetRenderMode} from "@/request/email.js";
 import {Icon} from "@iconify/vue";
 import {useEmailStore} from "@/store/email.js";
 import {useAccountStore} from "@/store/account.js";
@@ -138,8 +212,91 @@ const router = useRouter()
 const email = emailStore.contentData.email
 const showPreview = ref(false)
 const srcList = reactive([])
+const blockedCount = ref(0)
+const securityExpanded = ref(false)
 
 const { t } = useI18n()
+
+// Security section visibility (based on system setting, default enabled = 0)
+const showSecuritySection = computed(() => {
+  return settingStore.settings.securitySection === 0 || settingStore.settings.securitySection === undefined
+})
+
+// Parse auth results from email
+const authResults = computed(() => {
+  try {
+    if (email.authResults) {
+      return JSON.parse(email.authResults)
+    }
+  } catch (e) {
+    // ignore parse error
+  }
+  return null
+})
+
+// Render mode per email (falls back to global default)
+const defaultRenderMode = computed(() => {
+  return settingStore.settings.defaultRenderMode || 'allow_basic'
+})
+
+const currentRenderMode = ref(
+  email.renderMode || defaultRenderMode.value
+)
+
+const renderModeOptions = computed(() => [
+  { label: t('renderAllowAll'), value: 'allow_all' },
+  { label: t('renderAllowBasic'), value: 'allow_basic' },
+  { label: t('renderDisallow'), value: 'disallow' },
+])
+
+function onRenderModeChange(mode) {
+  email.renderMode = mode
+  blockedCount.value = 0
+  // Persist render mode for this email
+  emailSetRenderMode(email.emailId, mode).catch(e => {
+    console.error('Failed to save render mode', e)
+  })
+}
+
+function onContentBlocked(count) {
+  blockedCount.value = count
+}
+
+function authTagType(status) {
+  if (!status) return 'info'
+  switch (status) {
+    case 'pass': return 'success'
+    case 'fail': return 'danger'
+    case 'softfail': return 'warning'
+    case 'neutral': return 'info'
+    case 'none': return 'info'
+    default: return 'warning'
+  }
+}
+
+function authStatusLabel(status) {
+  if (!status) return t('authNone')
+  const map = {
+    pass: t('authPass'),
+    fail: t('authFail'),
+    softfail: t('authSoftfail'),
+    neutral: t('authNeutral'),
+    none: t('authNone'),
+    temperror: t('authError'),
+    permerror: t('authError'),
+    bestguesspass: t('authPass'),
+    policy: t('authNeutral')
+  }
+  return map[status] || status
+}
+
+function stripHtml(html) {
+  if (!html) return ''
+  const temp = document.createElement('div')
+  temp.innerHTML = html
+  return temp.textContent || temp.innerText || ''
+}
+
 watch(() => accountStore.currentAccountId, () => {
   handleBack()
 })
@@ -449,6 +606,10 @@ const handleDelete = () => {
         margin-bottom: 15px;
       }
 
+      .blocked-warning {
+        max-width: 500px;
+      }
+
       .send {
         display: flex;
         margin-bottom: 6px;
@@ -489,6 +650,110 @@ const handleDelete = () => {
       }
     }
   }
+}
+
+/* Security Section Styles */
+.security-section {
+  margin-top: 8px;
+  margin-bottom: 6px;
+  border: 1px solid var(--el-border-color-lighter, #e4e7ed);
+  border-radius: 6px;
+  overflow: hidden;
+  max-width: 500px;
+}
+
+.security-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 12px;
+  cursor: pointer;
+  background: var(--el-fill-color-lighter, #fafafa);
+  transition: background 0.2s;
+  user-select: none;
+
+  &:hover {
+    background: var(--el-fill-color, #f0f2f5);
+  }
+}
+
+.security-header-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--el-text-color-primary);
+}
+
+.security-chevron {
+  color: var(--el-text-color-secondary);
+  transition: transform 0.2s;
+}
+
+.security-body {
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-top: 1px solid var(--el-border-color-lighter, #e4e7ed);
+}
+
+.auth-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.auth-label {
+  font-weight: 600;
+  min-width: 48px;
+  color: var(--el-text-color-primary);
+}
+
+.auth-detail {
+  color: var(--el-text-color-secondary);
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 300px;
+}
+
+.security-slide-enter-active,
+.security-slide-leave-active {
+  transition: all 0.2s ease;
+  max-height: 200px;
+  overflow: hidden;
+}
+.security-slide-enter-from,
+.security-slide-leave-to {
+  max-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  opacity: 0;
+}
+
+/* Render mode bar */
+.render-mode-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 0;
+  margin-bottom: 10px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.render-mode-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--el-text-color-secondary);
+  white-space: nowrap;
 }
 
 .shadow-html::after  {

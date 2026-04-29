@@ -131,6 +131,15 @@ export const settingConst = {
 	authRefresh: {
 		OPEN: 1,
 		CLOSE: 0
+	},
+	securitySection: {
+		OPEN: 0,
+		CLOSE: 1
+	},
+	renderMode: {
+		ALLOW_ALL: 'allow_all',
+		ALLOW_BASIC: 'allow_basic',
+		DISALLOW: 'disallow'
 	}
 }
 
