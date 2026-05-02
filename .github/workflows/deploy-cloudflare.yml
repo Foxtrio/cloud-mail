@@ -99,7 +99,7 @@ jobs:
           sed -i 's/\r$//' "$CONFIG_FILE"
           
           if [ -z "$R2_BUCKET_NAME" ]; then
-            sed -i '/\[\[r2_buckets\]\]/,/^$/d' "$CONFIG_FILE"
+            sed -i '/\[\[r2_buckets\]\]/,/^[[:space:]]*$/d' "$CONFIG_FILE"
           fi
           
           if [ -z "$PROJECT_LINK" ]; then
@@ -111,7 +111,7 @@ jobs:
           fi
           
           if [ -z "$CUSTOM_DOMAIN" ]; then
-            sed -i '/\[\[routes\]\]/,/^$/d' "$CONFIG_FILE"
+            sed -i '/\[\[routes\]\]/,/^[[:space:]]*$/d' "$CONFIG_FILE"
           fi
 
           sed -i "s|\${NAME}|${NAME}|g" "$CONFIG_FILE"
