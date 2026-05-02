@@ -302,6 +302,9 @@ watch(() => accountStore.currentAccountId, () => {
 })
 
 onMounted(() => {
+  if (!tagStore.loaded) {
+    tagStore.fetchTags();
+  }
   if (emailStore.contentData.showUnread && email.unread === EmailUnreadEnum.UNREAD) {
     email.unread = EmailUnreadEnum.READ;
     emailRead([email.emailId]);

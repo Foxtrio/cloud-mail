@@ -189,6 +189,50 @@
               </div>
             </template>
           </el-dropdown-item>
+          <el-popover
+            v-if="['email','send', 'star', 'all-email'].includes(props.type)"
+            placement="right-start"
+            trigger="hover"
+            width="200"
+            :hide-after="0"
+          >
+            <template #reference>
+              <div class="el-dropdown-menu__item">
+                <div class="right-dropdown-item" style="width: 100%; display: flex; justify-content: space-between; align-items: center;">
+                  <div style="display:flex; align-items:center; gap: 8px;">
+                    <Icon icon="mdi:tag-outline" width="19" height="19" />
+                    <span>{{t('tags')}}</span>
+                  </div>
+                  <Icon icon="ep:arrow-right" width="14" height="14" />
+                </div>
+              </div>
+            </template>
+            <div class="tag-dropdown" @click.stop>
+              <div class="tag-dropdown-title">{{ t('tags') }}</div>
+              <el-scrollbar max-height="250px">
+                <div
+                    v-for="tag in tagStore.tags"
+                    :key="tag.tagId"
+                    class="tag-dropdown-item"
+                    @click.stop="toggleTag(tag)"
+                >
+                  <Icon
+                      v-if="hasTag(tag.tagId)"
+                      icon="ep:check"
+                      width="16"
+                      height="16"
+                      :color="tag.color"
+                  />
+                  <div v-else style="width: 16px; height: 16px;"></div>
+                  <div class="tag-dropdown-color" :style="{ background: tag.color }"></div>
+                  <span>{{ tag.name }}</span>
+                </div>
+                <div v-if="tagStore.tags.length === 0" style="padding: 10px; text-align: center; color: var(--el-text-color-secondary);">
+                  {{ t('noTags') }}
+                </div>
+              </el-scrollbar>
+            </div>
+          </el-popover>
           <el-dropdown-item v-if="props.type === 'all-email'" @click="handleSearch('user', rightClickEmail.userEmail)">
             <template #default>
               <div class="right-dropdown-item">
@@ -234,6 +278,8 @@ import {computed, onActivated, reactive, ref, watch, nextTick, onMounted, onUnmo
 import {useEmailStore} from "@/store/email.js";
 import {useUiStore} from "@/store/ui.js";
 import {useSettingStore} from "@/store/setting.js";
+import {useTagStore} from "@/store/tag.js";
+import {tagAddToEmail, tagRemoveFromEmail} from "@/request/tag.js";
 import {sleep} from "@/utils/time-utils.js"
 import {fromNow} from "@/utils/day.js";
 import {useI18n} from "vue-i18n";
@@ -296,6 +342,7 @@ const {t} = useI18n()
 const settingStore = useSettingStore()
 const uiStore = useUiStore();
 const emailStore = useEmailStore();
+const tagStore = useTagStore();
 const loading = ref(false);
 const followLoading = ref(false);
 const noLoading = ref(false);
@@ -357,6 +404,9 @@ onActivated(() => {
 })
 
 onMounted(() => {
+  if (!tagStore.loaded) {
+    tagStore.fetchTags();
+  }
   timer = setInterval(() => {
     emailList.forEach(email => {
       email.formatCreateTime = fromNow(email.createTime);
@@ -520,6 +570,32 @@ const handleContextmenu = (event, email) => {
 
   rightClickEmail.value = email;
   rightClickEmail.value.rightChecked = true
+}
+
+function hasTag(tagId) {
+  return rightClickEmail.value?.tagList?.some(t => t.tagId === tagId)
+}
+
+async function toggleTag(tag) {
+  const email = rightClickEmail.value;
+  if (!email.tagList) {
+    email.tagList = []
+  }
+
+  const index = email.tagList.findIndex(t => t.tagId === tag.tagId)
+  try {
+    if (index > -1) {
+      // Remove tag
+      await tagRemoveFromEmail(tag.tagId, email.emailId)
+      email.tagList.splice(index, 1)
+    } else {
+      // Add tag
+      await tagAddToEmail(tag.tagId, email.emailId)
+      email.tagList.push({ tagId: tag.tagId, name: tag.name, color: tag.color })
+    }
+  } catch (e) {
+    console.error('Failed to toggle tag', e)
+  }
 }
 
 function updateHasScrollbar() {
